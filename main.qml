@@ -1,16 +1,27 @@
 import QtQuick 2.12
 import QtQuick.Window 2.12
+ import QtQuick.Controls 2.5
 
 import "./BaseControls/BaseControls.js" as BaseControlsJs
-import "./BaseControls"
+import "./BaseControls/."
 
-Window {
+ApplicationWindow {
     width: 1280
-    height: 1024
+    height: 768
     visible: true
     title: qsTr("Hello World")
-
-
+//    flags: Qt.Window | Qt.CustomizeWindowHint
+//    header: ToolBar {
+////        visible: false
+//        width: parent.width
+//        height: 60
+//        font.pointSize: 12
+//        font.bold: true
+//        Row{
+//            anchors.verticalCenter: parent.verticalCenter
+//            spacing: 4
+//        }
+//    }
 
     Item {
         id: controlsSelArea
@@ -62,7 +73,7 @@ Window {
 
         clip: true
 
-        property variant currentSubObject: null
+        property int currentSubObject: -1
 
 
         ListModel{
@@ -96,8 +107,18 @@ Window {
                         width: 200
                         text: propertyValue
                         onEditingFinished: {
-                            controlsPropertyArea.currentSubObject[propertyId] = text
+                            root.subObject[controlsPropertyArea.currentSubObject].obj[propertyId] = text
+                            var tempSubObject = root.subObject
+                            var tempChangedProperty = JSON.parse(tempSubObject[controlsPropertyArea.currentSubObject].changedProperty)
+                            if(tempChangedProperty.indexOf(propertyId) == -1){
+                                tempChangedProperty.push(propertyId)
+                                tempSubObject[controlsPropertyArea.currentSubObject].changedProperty = JSON.stringify(tempChangedProperty)
+                                root.subObject = tempSubObject
+                                console.log("tempChangedProperty",tempChangedProperty)
+                            }
+
                         }
+
                     }
                 }
             }
@@ -117,28 +138,48 @@ Window {
     Rectangle {
         id: root
         //        anchors.fill: parent
-        width: parent.width - controlsSelArea.width
-        height: parent.height
+//        width: parent.width - controlsSelArea.width
+//        height: parent.height
+        width: 800
+        height: 600
         border.color: "black"
         border.width: 1
 
         property variant subObject: []
 
-
+        //< 控件被点击时需要显示属性
         function subObjectMouseClick(subObj){
             console.log("有个对象被按压了")
+            var tempSubObject = root.subObject
+            for(var i = 0;i<tempSubObject.length;i++){
+                var t = tempSubObject[i];
+                if(t.obj == subObj){
+                    controlsPropertyArea.currentSubObject = i
+                    break;
+                }
+            }
             subObjPropertyListModel.clear()
             for( var i in subObj){
                 if(typeof subObj[i] == "object" || typeof subObj[i] == "function")
                     continue
                 subObjPropertyListModel.append({"propertyId":i+"","propertyValue":subObj[i]+""})
             }
-            controlsPropertyArea.currentSubObject = subObj
+
         }
 
         function subObjectDestroy(subObj){
-
-
+            var tempSubObject = root.subObject
+            for(var i = 0;i<tempSubObject.length;i++){
+                var t = tempSubObject[i];
+                if(t.obj == subObj){
+                    tempSubObject.splice(i,1);
+                    break;
+                }
+            }
+            if(subObj == controlsPropertyArea.currentSubObject){
+                controlsPropertyArea.currentSubObject = -1
+                subObjPropertyListModel.clear()
+            }
             subObj.destroy()
         }
 
@@ -148,7 +189,7 @@ Window {
                 var tempSubObject = root.subObject
                 var ret = BaseControlsJs.createQmlObject(root,BaseControlsJs.custom_ui[uiControlsListView.currentIndex].ui_url,{"x":mouseX-root.x,"y":mouseY-root.y,"z":1});
                 if(ret != null){
-                    tempSubObject.push({"url":BaseControlsJs.custom_ui[uiControlsListView.currentIndex].ui_url,"obj":ret})
+                    tempSubObject.push({"url":BaseControlsJs.custom_ui[uiControlsListView.currentIndex].ui_url,"obj":ret,"changedProperty":"[]"})
                     root.subObject = tempSubObject
                 }
             }
@@ -168,7 +209,18 @@ Window {
             }
             sub = root.subObject
             for(let i = 0;i<sub.length;i++){
-                BaseControlsJs.createComplieQmlObject(tryRunPageRoot,sub[i].url,{"x":sub[i].obj.x,"y":sub[i].obj.y});
+                var change = JSON.parse(sub[i].changedProperty)
+                var sub_property = {}
+                for(var j = 0;j<change.length;j++){
+                    sub_property[change[j]] = sub[i].obj[change[j]]
+                }
+                if(change.indexOf("x") == -1){
+                    sub_property.x = sub[i].obj.x
+                }
+                if(change.indexOf("y") == -1){
+                    sub_property.y = sub[i].obj.y
+                }
+                BaseControlsJs.createComplieQmlObject(tryRunPageRoot,sub[i].url,sub_property);
             }
         }
 

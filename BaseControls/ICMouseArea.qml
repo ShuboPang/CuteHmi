@@ -19,8 +19,8 @@ MouseArea {
 
     Popup {
         id: popup
-        x: parent.width
-        y: parent.height
+//        x: parent.width
+//        y: parent.height
 //        modal: true
         focus: true
         width: menu.width + 20
@@ -64,19 +64,42 @@ MouseArea {
 
     onPositionChanged: {
         if(isPressed){
-            parent.x += mouseX - lastX
-            parent.y += mouseY - lastY
+            var rel_x =  mouseX - lastX
+            var rel_y =  mouseY - lastY
+            if(parent.x >= parent.parent.width-10){
+                if(rel_x >=  0){
+                    return
+                }
+            }
+            if(parent.y >= parent.parent.height-10){
+                if(rel_y >=  0){
+                    return
+                }
+            }
+
+            parent.x += rel_x
+            parent.y += rel_y
+
+
         }
     }
 
     onReleased: {
         isPressed = false
+        if(parent.x >= parent.parent.width-10){
+            parent.x = parent.parent.width-10
+        }
+        if(parent.y >= parent.parent.height-10){
+            parent.y = parent.parent.height-10
+        }
     }
 
 
     onClicked: {
         mouseClick(parent)
         if(mouse.button ==  Qt.RightButton){
+            popup.x = /*parent.x +*/ mouseX
+            popup.y =/* parent.y +*/ mouseY
             popup.open()
         }
     }
