@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>BaseControls/BaseControls.js</file>
+        <file>BaseControls/ICButton.qml</file>
+        <file>BaseControls/ICMouseArea.qml</file>
+        <file>BaseControls/ICCheckbox.qml</file>
+    </qresource>
+</RCC>
